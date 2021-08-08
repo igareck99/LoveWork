@@ -89,7 +89,7 @@ class Shedule(models.Model):
     table = models.ForeignKey(Tables, on_delete=models.CASCADE)
 
     def __str__(self):
-        return 'Гость записан {} '.format(self.guest.name)
+        return 'Гость {} записан '.format(self.guest.name)
 
 
 class Admin_shedule(models.Model):

@@ -11,8 +11,10 @@ from json import dumps
 from .serializers import *
 from .errors import *
 from caljan.models import *
-from .app_func import generate_session_password
+from .app_func import *
 from .menu import *
+from math import fabs
+from .keys import *
 
 @api_view(['POST'])
 def add_feedback(request):
@@ -172,6 +174,92 @@ def webhook_selector(request):
             except Exception:
                 return HttpResponse(data, content_type="application/json")
     return HttpResponse(data, content_type="application/json")
+
+
+@api_view(['POST'])
+def shedule_sign_up(request):
+    r = request.data
+    try:
+        u = User_guest.objects.get(session_password=r.get('session_password'))
+    except Exception:
+        data = dumps({"response": "Incorrect password"})
+        return HttpResponse(data, content_type="application/json")
+    try:
+        date_s = reformat_date(r.get('date_s'))
+    except Exception:
+        data = dumps({"response": "Incorrect date"})
+        return HttpResponse(data, content_type="application/json")
+    time_s = reformat_time(r.get('time_s'))
+    if type(time_s) != time:
+        data = dumps({"response": "Incorrect time"})
+        return HttpResponse(data, content_type="application/json")
+    try:
+        if r.get('table_id') is None:
+            data = dumps({"response": "Incorrect table"})
+            return HttpResponse(data, content_type="application/json")
+        shedule_list = Shedule.objects.filter(visit_day__day=date_s.day, visit_day__month=date_s.month, visit_day__year=date_s.year)\
+                                  .filter(table_id=r.get('table_id'))
+    except Exception:
+        data = dumps({"response": "Incorrect table"})
+        return HttpResponse(data, content_type="application/json")
+    try:
+        s = Admin_shedule.objects.get(work_date__day=date_s.day, work_date__month=date_s.month, work_date__year=date_s.year)
+    except Exception:
+        data = dumps({"response": "This day is not working"})
+        return HttpResponse(data, content_type="application/json")
+    try:
+         if time_s<s.start_work_time:
+             data = dumps({"response": "At this time we are closed"})
+             return HttpResponse(data, content_type="application/json")
+    except Exception:
+        data = dumps({"response": "At this time we are closed"})
+        return HttpResponse(data, content_type="application/json")
+    for x in shedule_list:
+        if fabs(x.visit_time.hour*60 + x.visit_time.minute - (time_s.hour*60+time_s.minute)) < table_busy_time*60:
+            data = dumps({"response": "The table on that time is busy"})
+            return HttpResponse(data, content_type="application/json")
+    shedule = Shedule()
+    shedule.guest = u
+    shedule.visit_time = time_s
+    shedule.visit_day = date_s
+    shedule.table_id = r.get('table_id')
+    shedule.comment = '' if r.get('comment') is None else r.get('comment')
+    shedule.approved = False
+    shedule.save()
+    data = dumps({"response": "Вы успешно записаны. Ожидайте подтверждения брони от администратора"})
+    return HttpResponse(data, content_type="application/json")
+
+
+@api_view(['GET'])
+def get_busy_shedule(request):
+    r = request.data
+    try:
+        u = User_guest.objects.get(session_password=r.get('session_password'))
+    except Exception:
+        data = dumps({"response": "Incorrect password"})
+        return HttpResponse(data, content_type="application/json")
+    d = r.get('date_s')
+    t = r.get('time_s')
+    if d is None :
+        data = dumps({"response": "Bad request"})
+        return HttpResponse(data, content_type="application/json")
+    try:
+        date_s = reformat_date(r.get('date_s'))
+    except Exception:
+        data = dumps({"response": "Incorrect date format"})
+        return HttpResponse(data, content_type="application/json")
+    try:
+        s = Admin_shedule.objects.filter(approved=True).get(work_date__day=date_s.day, work_date__month=date_s.month, work_date__year=date_s.year).filter(approved=True)
+    except Exception:
+        data = dumps({"response": "This day is not working"})
+        return HttpResponse(data, content_type="application/json")
+    result = []
+    for x in s:
+        strin_g = '{}-{} Стол {} '.format(x.visit_time.hour, x.visit_time.minute, x.table_id)
+        result.append(strin_g)
+    data = dumps({"response": result})
+    return HttpResponse(data, content_type="application/json")
+
 
 
 
