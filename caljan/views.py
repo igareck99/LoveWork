@@ -240,7 +240,7 @@ def get_busy_shedule(request):
         return HttpResponse(data, content_type="application/json")
     d = r.get('date_s')
     t = r.get('time_s')
-    if d is None :
+    if d is None:
         data = dumps({"response": "Bad request"})
         return HttpResponse(data, content_type="application/json")
     try:
@@ -249,13 +249,15 @@ def get_busy_shedule(request):
         data = dumps({"response": "Incorrect date format"})
         return HttpResponse(data, content_type="application/json")
     try:
-        s = Admin_shedule.objects.filter(approved=True).get(work_date__day=date_s.day, work_date__month=date_s.month, work_date__year=date_s.year).filter(approved=True)
+        s = Admin_shedule.objects.get(work_date__day=date_s.day, work_date__month=date_s.month, work_date__year=date_s.year)
     except Exception:
         data = dumps({"response": "This day is not working"})
         return HttpResponse(data, content_type="application/json")
+    s = Shedule.objects.filter(visit_day__day=date_s.day, visit_day__month=date_s.month, visit_day__year=date_s.year)\
+                              .filter(approved=True)
     result = []
     for x in s:
-        strin_g = '{}-{} Стол {} '.format(x.visit_time.hour, x.visit_time.minute, x.table_id)
+        strin_g = '{}-{} Table {} '.format(x.visit_time.hour, x.visit_time.minute, x.table_id)
         result.append(strin_g)
     data = dumps({"response": result})
     return HttpResponse(data, content_type="application/json")
