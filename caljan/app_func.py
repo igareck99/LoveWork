@@ -1,6 +1,6 @@
 import random
 import string
-from datetime import date,time
+from datetime import date, time
 
 def generate_session_password(length=16):
     letters = string.ascii_letters

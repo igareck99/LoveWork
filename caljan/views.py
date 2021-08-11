@@ -75,11 +75,11 @@ def register_user(request):
         telephone = data.get('telephone')
         print(telephone)
         if telephone:
-            seed(54)
             code = str(randint(100000, 999999))
             sender = 'INFORM'
-            url = "http://smspilot.ru/api.php?send={}&to={}&from={}&apikey={}&format=json".format(code, telephone, sender, 'dfdf')
+            url = "http://smspilot.ru/api.php?send={}&to={}&from={}&apikey={}&format=json".format(code, telephone, sender, api_key)
             r = get(url)
+            print(r.json())
             try:
                 stat = r.json().get('send')[0].get('status')
             except TypeError:
@@ -104,9 +104,15 @@ def check_code(request):
                     c = generate_session_password()
                     while User_guest.objects.filter(session_password=c).first() is not None:
                         c = generate_session_password()
-                    user = User_guest(phone=telephone, session_password=generate_session_password(), name='Guest')
+                    user = User_guest.objects.get(phone=telephone)
+                    if user is not None:
+                        user.session_password = c
+                        user.save()
+                    else:
+                        user = User_guest(phone=telephone, session_password=c, name='Guest')
                     user.save()
-                    data = dumps({'data': 'Вы успешно зарегестрированы в системе'})
+                    data = dumps({'data': 'Вы успешно зарегестрированы в системе', 'session_password': c})
+                    user_code.delete()
                     return HttpResponse(data, content_type="application/json")
                 else:
                     data = dumps({'data': 'Неверный код'})

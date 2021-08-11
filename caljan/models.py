@@ -96,8 +96,8 @@ class Admin_shedule(models.Model):
     id = models.AutoField(primary_key=True)
     work_date = models.DateField(null=False, default=datetime(year=2020, day=1, month=1))
     start_work_time = models.TimeField(null=True, default=time(hour=0, minute=1))
-    end_work_time = models.TimeField(null=True, default=time(hour=0, minute=2))
-    comment = models.CharField(max_length=200, default='')
+    end_work_time = models.TimeField(null=True, default=time(hour=23, minute=59))
+    comment = models.CharField(max_length=200, default='', null=True)
 
     def __str__(self):
         return 'Дата {}'.format(self.work_date)
